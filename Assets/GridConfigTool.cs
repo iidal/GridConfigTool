@@ -4,9 +4,25 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using System.Linq;
 using System.IO;
-public class Pack {
-    public List<string> packs;
+public class ConfigData
+{
+    [System.Serializable]
+    public class Row
+    {
+        public bool[] row;
+    }
+    public Row[] rows;
+    public string id;
+    public string name;
+    public uint rowsCount;
+    public uint columnsCount;
 }
+public class gridButtonData
+{
+    public int x; // row index
+    public int y;  // column index
+    public string value; // not going to be string forever
+};
 public class GridConfigTool : EditorWindow
 {
     private string path = "";
@@ -14,15 +30,17 @@ public class GridConfigTool : EditorWindow
     private VisualElement m_mainView;
     private VisualElement m_buttonContainer;
 
-    private int m_columnCount = 3;
-    private int m_rowCount = 4;
+    uint m_columnCount = 3;
+    uint m_rowCount = 4;
+    string m_configId = "";
+    string m_configName = "";
 
-    List<string> buttonData = new List<string>();
+    List<gridButtonData> m_buttonData = new List<gridButtonData>();
 
     [MenuItem("Window/GridConfigTool")]
     public static void ShowMyEditor()
-    { 
-        
+    {
+
         // This method is called when the user selects the menu item in the Editor.
         EditorWindow wnd = GetWindow<GridConfigTool>();
         wnd.titleContent = new GUIContent("GridConfigTool");
@@ -34,7 +52,9 @@ public class GridConfigTool : EditorWindow
 
     void OnEnable()
     {
-        path = Path.Combine(Application.persistentDataPath, "config.json"); // TODO get from text field
+        //path = Path.Combine(Application.persistentDataPath, "config.json");
+        // TODO get from text field
+        string assetPath = $"Assets/Resources/Configs";
     }
 
     public void CreateGUI()
@@ -43,6 +63,11 @@ public class GridConfigTool : EditorWindow
         m_mainView = new VisualElement();
         var holder = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
         rootVisualElement.Add(m_mainView);
+        // ==== ID, NAMES..==================================================================================================
+        var configId = new TextField("Config id:");
+        m_mainView.Add(configId);
+        var configName = new TextField("Config name:");
+        m_mainView.Add(configName);
         // ==== GRID SIZE ===================================================================================================
         var rowsCount = new UnsignedIntegerField("Rows:");
         rowsCount.value = (uint)m_rowCount;
@@ -55,8 +80,8 @@ public class GridConfigTool : EditorWindow
         var updateGridButton = new Button(() =>
         {
             Debug.Log("Update Grid button clicked.");
-            m_rowCount = (int)rowsCount.value;
-            m_columnCount = (int)columnsCount.value;
+            m_rowCount = rowsCount.value;
+            m_columnCount = columnsCount.value;
             CreateGrid();
         })
         {
@@ -75,10 +100,12 @@ public class GridConfigTool : EditorWindow
         var retrieveButton = new Button(() =>
         {
             Debug.Log("Retrieve button clicked. Processing all button data...");
-            foreach (var data in buttonData)
+            foreach (var data in m_buttonData)
             {
-                Debug.Log($"Processing data: {data}");
+                Debug.Log($"Processing data: {data.value} at ({data.x}, {data.y})");
             }
+            m_configId = configId.value;
+            m_configName = configName.value;
             Save();
         })
         {
@@ -98,8 +125,21 @@ public class GridConfigTool : EditorWindow
         m_buttonContainer.style.justifyContent = Justify.Center;
         m_buttonContainer.style.marginTop = 10;
 
-        int buttonCount = m_columnCount * m_rowCount;
-        buttonData = Enumerable.Repeat("default", buttonCount).ToList();
+        //var buttonCount = m_columnCount * m_rowCount;
+        m_buttonData = new List<gridButtonData>();
+        for (int col = 0; col < m_columnCount; col++)
+        {
+            for (int row = 0; row < m_rowCount; row++)
+            {
+                m_buttonData.Add(new gridButtonData
+                {
+                    x = col,
+                    y = row,
+                    value = "default"
+                });
+            }
+        }
+
 
         for (int row = 0; row < m_columnCount; row++)
         {
@@ -110,15 +150,28 @@ public class GridConfigTool : EditorWindow
 
             for (int i = 0; i < m_rowCount; i++)
             {
-                int buttonIndex = row * m_rowCount + i;
-                if (buttonIndex >= buttonData.Count) break; // Stop if no more buttons are left.
+                int buttonIndex = (int)(row * m_rowCount + i);
+                if (buttonIndex >= m_buttonData.Count) break; // Stop if no more buttons are left.
 
-                var button = new Button(() =>
+
+                // Create the button.
+                var button = new Button();
+                button.text = m_buttonData[buttonIndex].value;
+
+                // Set button size and spacing.
+                // button.style.width = 100;
+                // button.style.height = 50;
+                // button.style.marginRight = 5;
+
+                // Assign the click event after the button is created.
+                button.clicked += () =>
                 {
-                    Debug.Log($"Button clicked with data: {buttonData[buttonIndex]}");
-                })
-                {
-                    text = buttonData[buttonIndex]
+                    // Access and modify the corresponding gridButtonData.
+                    var buttonData = m_buttonData[buttonIndex];
+                    buttonData.value = buttonData.value == "default" ? "clicked" : "default";
+                    m_buttonData[buttonIndex] = buttonData; // Update the list.
+                    button.text = buttonData.value; // Update the button text.
+                    Debug.Log($"Button at ({buttonData.x}, {buttonData.y}) clicked. New value: {buttonData.value}");
                 };
 
                 // Set button size and spacing.
@@ -138,11 +191,35 @@ public class GridConfigTool : EditorWindow
 
     private void Save()
     {
-        Pack packList = new Pack();
-        packList.packs = buttonData;
-        string json = JsonUtility.ToJson(packList, true);
-        File.WriteAllText(path, json);
-        Debug.Log("Saved to " + path);
+        ConfigData configData = new ConfigData
+        {
+            rows = new ConfigData.Row[m_rowCount],
+                        id = m_configId,
+            name = m_configName,
+            rowsCount = m_rowCount,
+            columnsCount = m_columnCount
+        };
+
+        // Initialize each row with a bool array of size 4.
+        for (int i = 0; i < configData.rows.Length; i++)
+        {
+            configData.rows[i] = new ConfigData.Row
+            {
+                row = new bool[m_columnCount]
+            };
+        }
+        for (int index = 0; index < m_buttonData.Count; index++)
+        {
+            bool clicked = m_buttonData[index].value == "clicked" ? true : false;
+            configData.rows[m_buttonData[index].y].row[m_buttonData[index].x] = clicked;
+            //Debug.Log($"Index: {index}, Row: {rowIndex}, Column: {columnIndex}, Clicked: {clicked}");
+        }
+
+        string json = JsonUtility.ToJson(configData, true);
+        //File.WriteAllText(path + "/" + m_configName, json);
+        File.WriteAllText($"Assets/Resources/{m_configName}.json", json);
+        AssetDatabase.Refresh();
+
     }
 
 
