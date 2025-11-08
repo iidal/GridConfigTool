@@ -56,5 +56,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "GridConfigTool.sln"
+    "dotnet.defaultSolution": "GridConfigTool.slnx"
 }

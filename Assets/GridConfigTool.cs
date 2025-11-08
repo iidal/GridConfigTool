@@ -6,10 +6,13 @@ using System.Linq;
 using System.IO;
 public class ConfigData
 {
+// add also enum/something array so not restricted to two values
+
     [System.Serializable]
     public class Row
     {
         public bool[] row;
+        public string[] notBoolRow; //???
     }
     public Row[] rows;
     public string id;
