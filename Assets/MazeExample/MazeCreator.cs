@@ -5,30 +5,61 @@ using UnityEngine;
 public class MazeCreator : MonoBehaviour
 {
     public GameObject m_wallPrefab;
+    public GameObject m_walls;
+    public GameObject m_wallSpawnPoint;
+    public GameObject m_borderLeft;
+    public GameObject m_borderRight;
+    public GameObject m_startArea;
+    public GameObject m_goalArea;
     void Start()
     {
-        
+        CreateMaze();
     }
 
     // Update is called once per frame
     void CreateMaze()
     {
-        // these from config
-        int xSize = 6;
-        int zSize = 5;
-        GameObject[,] m_elements = new GameObject[xSize, zSize];
-        for (int i = 0; i < m_xWidth; i++)
+        // these from config,
+        // float for coordinates, see if have to be int
+        float xSize = 6;
+        float zSize = 5;
+
+        for (int i = 0; i < xSize; i++)
         {
-            for (int j = 0; j < m_zWidth; j++)
+            for (int j = 0; j < zSize; j++)
             {
-                GameObject tile = Instantiate(m_tilePrefab, new Vector3(i+(m_tileOffset * i), 0, j + (m_tileOffset* j)), m_tilePrefab.transform.rotation, this.transform);
-                tile.name = $"tile{i}{j}";
-                TileControl controller = tile.GetComponent<TileControl>();
-                controller.InitTile(new Vector2(i,j), this);
-                controller.m_onTileSelect += TileClicked;
-                m_tiles[i, j] = tile.GetComponent<TileControl>();
+                float xPos = m_wallSpawnPoint.transform.position.x - (xSize / 2) + i + 0.5f; // 0.5 shift to align to center
+                float zPos = m_wallSpawnPoint.transform.position.z - (zSize / 2) + j + 0.5f;
+                Vector3 pos = new Vector3(xPos, 0.0f, zPos);
+                Instantiate(m_wallPrefab, pos, Quaternion.identity, m_walls.transform);
             }
         }
-
+        // place borders
+        // ALL border elements need to be a parented by a 1x1x1 cube that handles positionsing, and as children the visual elements that can then be scaled to fit the puzzle
+        
+        {// left
+            float xPos = m_wallSpawnPoint.transform.position.x - xSize / 2 -0.5f; // -0.5 to align to edge
+            float zScale = zSize + 2; // +2 to cover corners
+            m_borderLeft.transform.position = new Vector3(xPos, 0.0f, m_wallSpawnPoint.transform.position.z);
+            //m_borderLeft.transform.localScale = new Vector3(1.0f, 2.0f, zScale);
+        }
+        {// right
+            float xPos = m_wallSpawnPoint.transform.position.x + xSize / 2 + 0.5f; // 0.5 to align to edge; 
+            float zScale = zSize + 2; // +2 to cover corners
+            m_borderRight.transform.position = new Vector3(xPos, 0.0f, m_wallSpawnPoint.transform.position.z);
+            //m_borderRight.transform.localScale = new Vector3(1.0f, 2.0f, zScale);
+        }
+        {// start
+            float zPos = m_wallSpawnPoint.transform.position.z - zSize / 2 - 0.5f; // -0.5 to align to edge
+            float xScale = zSize + 2; // +2 to cover corners
+            m_startArea.transform.position = new Vector3(m_wallSpawnPoint.transform.position.x, 0.0f, zPos);
+            //m_borderRight.transform.localScale = new Vector3(xScale, 1.0f, 1.0f);
+        }
+        {// goal
+            float zPos = m_wallSpawnPoint.transform.position.z + zSize / 2 + 0.5f; // 0.5 to align to edge
+            float xScale = zSize + 2; // +2 to cover corners
+            m_goalArea.transform.position = new Vector3(m_wallSpawnPoint.transform.position.x, 0.0f , zPos);
+            //m_borderRight.transform.localScale = new Vector3(xScale, 1.0f, 1.0f);
+        }
     }
 }
