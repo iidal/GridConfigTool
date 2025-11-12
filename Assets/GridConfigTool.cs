@@ -6,7 +6,7 @@ using System.Linq;
 using System.IO;
 public class ConfigData
 {
-// add also enum/something array so not restricted to two values
+    // add also enum/something array so not restricted to two values
 
     [System.Serializable]
     public class Row
@@ -37,6 +37,7 @@ public class GridConfigTool : EditorWindow
     uint m_rowCount = 4;
     string m_configId = "";
     string m_configName = "";
+    string m_assetPath = "";
 
     List<gridButtonData> m_buttonData = new List<gridButtonData>();
 
@@ -55,9 +56,6 @@ public class GridConfigTool : EditorWindow
 
     void OnEnable()
     {
-        //path = Path.Combine(Application.persistentDataPath, "config.json");
-        // TODO get from text field
-        string assetPath = $"Assets/Resources/Configs";
     }
 
     public void CreateGUI()
@@ -66,6 +64,12 @@ public class GridConfigTool : EditorWindow
         m_mainView = new VisualElement();
         var holder = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
         rootVisualElement.Add(m_mainView);
+        // ==== SAVE PATH ===================================================================================================
+        var pathTip = new Label("Save path under Assets/Resources/:");
+        var pathField = new TextField("Save path:");
+        m_mainView.Add(pathTip);
+        m_mainView.Add(pathField);
+
         // ==== ID, NAMES..==================================================================================================
         var configId = new TextField("Config id:");
         m_mainView.Add(configId);
@@ -109,6 +113,7 @@ public class GridConfigTool : EditorWindow
             }
             m_configId = configId.value;
             m_configName = configName.value;
+            m_assetPath = pathField.value;
             Save();
         })
         {
@@ -197,7 +202,7 @@ public class GridConfigTool : EditorWindow
         ConfigData configData = new ConfigData
         {
             rows = new ConfigData.Row[m_rowCount],
-                        id = m_configId,
+            id = m_configId,
             name = m_configName,
             rowsCount = m_rowCount,
             columnsCount = m_columnCount
@@ -215,14 +220,15 @@ public class GridConfigTool : EditorWindow
         {
             bool clicked = m_buttonData[index].value == "clicked" ? true : false;
             configData.rows[m_buttonData[index].y].row[m_buttonData[index].x] = clicked;
-            //Debug.Log($"Index: {index}, Row: {rowIndex}, Column: {columnIndex}, Clicked: {clicked}");
         }
-
         string json = JsonUtility.ToJson(configData, true);
-        //File.WriteAllText(path + "/" + m_configName, json);
-        File.WriteAllText($"Assets/Resources/{m_configName}.json", json);
+        string folderPath = $"Assets/Resources/{m_assetPath}";
+        if (!Directory.Exists(folderPath))
+        {
+            Directory.CreateDirectory(folderPath);
+        }
+        File.WriteAllText($"{folderPath}/{m_configName}.json", json);
         AssetDatabase.Refresh();
-
     }
 
 
