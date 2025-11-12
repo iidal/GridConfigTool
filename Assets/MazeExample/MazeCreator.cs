@@ -4,6 +4,9 @@ using UnityEngine;
 
 public class MazeCreator : MonoBehaviour
 {
+    // Note that all objects must be scaled to 1 units, resizing and positioning them is based on that
+
+
     public GameObject m_wallPrefab;
     public GameObject m_walls;
     public GameObject m_wallSpawnPoint;
@@ -16,7 +19,6 @@ public class MazeCreator : MonoBehaviour
         CreateMaze();
     }
 
-    // Update is called once per frame
     void CreateMaze()
     {
         // these from config,
@@ -35,31 +37,29 @@ public class MazeCreator : MonoBehaviour
             }
         }
         // place borders
-        // ALL border elements need to be a parented by a 1x1x1 cube that handles positionsing, and as children the visual elements that can then be scaled to fit the puzzle
-        
         {// left
             float xPos = m_wallSpawnPoint.transform.position.x - xSize / 2 -0.5f; // -0.5 to align to edge
-            float zScale = zSize + 2; // +2 to cover corners
+            float zScale = zSize;
             m_borderLeft.transform.position = new Vector3(xPos, 0.0f, m_wallSpawnPoint.transform.position.z);
-            //m_borderLeft.transform.localScale = new Vector3(1.0f, 2.0f, zScale);
+            m_borderLeft.GetComponent<BorderHelper>().Resize(new Vector3(1.0f, 1.0f, zScale));
         }
         {// right
             float xPos = m_wallSpawnPoint.transform.position.x + xSize / 2 + 0.5f; // 0.5 to align to edge; 
-            float zScale = zSize + 2; // +2 to cover corners
+            float zScale = zSize;
             m_borderRight.transform.position = new Vector3(xPos, 0.0f, m_wallSpawnPoint.transform.position.z);
-            //m_borderRight.transform.localScale = new Vector3(1.0f, 2.0f, zScale);
+            m_borderRight.GetComponent<BorderHelper>().Resize(new Vector3(1.0f, 1.0f, zScale));
         }
         {// start
             float zPos = m_wallSpawnPoint.transform.position.z - zSize / 2 - 0.5f; // -0.5 to align to edge
             float xScale = zSize + 2; // +2 to cover corners
             m_startArea.transform.position = new Vector3(m_wallSpawnPoint.transform.position.x, 0.0f, zPos);
-            //m_borderRight.transform.localScale = new Vector3(xScale, 1.0f, 1.0f);
+            m_startArea.GetComponent<BorderHelper>().Resize(new Vector3(xScale, 1.0f, 1.0f));
         }
         {// goal
             float zPos = m_wallSpawnPoint.transform.position.z + zSize / 2 + 0.5f; // 0.5 to align to edge
             float xScale = zSize + 2; // +2 to cover corners
             m_goalArea.transform.position = new Vector3(m_wallSpawnPoint.transform.position.x, 0.0f , zPos);
-            //m_borderRight.transform.localScale = new Vector3(xScale, 1.0f, 1.0f);
+            m_goalArea.GetComponent<BorderHelper>().Resize(new Vector3(xScale, 1.0f, 1.0f));
         }
     }
 }
