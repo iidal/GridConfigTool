@@ -28,8 +28,7 @@ public class gridButtonData
 };
 public class GridConfigTool : EditorWindow
 {
-    private string path = "";
-    //[SerializeField] private int m_SelectedIndex = -1;
+    private VisualElement m_rightView;
     private VisualElement m_mainView;
     private VisualElement m_buttonContainer;
 
@@ -60,10 +59,12 @@ public class GridConfigTool : EditorWindow
 
     public void CreateGUI()
     {
-        // TODO actually go with two pane split, grid is on one side, everyhting else on the other.
+        var splitView = new TwoPaneSplitView(0, 250, TwoPaneSplitViewOrientation.Horizontal);
+        rootVisualElement.Add(splitView);
         m_mainView = new VisualElement();
-        var holder = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
-        rootVisualElement.Add(m_mainView);
+        m_rightView = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
+        splitView.Add(m_mainView);
+        splitView.Add(m_rightView);
         // ==== SAVE PATH ===================================================================================================
         var pathTip = new Label("Save path under Assets/Resources/:");
         var pathField = new TextField("Save path:");
@@ -100,7 +101,6 @@ public class GridConfigTool : EditorWindow
 
         m_buttonContainer = new VisualElement();
         CreateGrid();
-        m_mainView.Add(m_buttonContainer);
 
         // ==== GENERATING CONFIG===========================================================================================
         // Add another button to retrieve information from all buttons.
@@ -120,6 +120,7 @@ public class GridConfigTool : EditorWindow
             text = "Retrieve Data"
         };
         m_mainView.Add(retrieveButton);
+
     }
 
 
@@ -194,7 +195,7 @@ public class GridConfigTool : EditorWindow
         }
 
         // Add the button container to the view
-        m_mainView.Add(m_buttonContainer);
+        m_rightView.Add(m_buttonContainer);
     }
 
     private void Save()
