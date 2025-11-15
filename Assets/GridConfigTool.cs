@@ -19,6 +19,7 @@ public class ConfigData
     public string name;
     public uint rowsCount;
     public uint columnsCount;
+    public uint difficulty;
 }
 public class gridButtonData
 {
@@ -34,6 +35,7 @@ public class GridConfigTool : EditorWindow
 
     uint m_columnCount = 3;
     uint m_rowCount = 4;
+    uint m_difficulty = 1;
     string m_configId = "";
     string m_configName = "";
     string m_assetPath = "";
@@ -76,6 +78,8 @@ public class GridConfigTool : EditorWindow
         m_mainView.Add(configId);
         var configName = new TextField("Config name:");
         m_mainView.Add(configName);
+        var difficulty = new UnsignedIntegerField("Difficulty:");
+        m_mainView.Add(difficulty);
         // ==== GRID SIZE ===================================================================================================
         var rowsCount = new UnsignedIntegerField("Rows:");
         rowsCount.value = (uint)m_rowCount;
@@ -114,6 +118,7 @@ public class GridConfigTool : EditorWindow
             m_configId = configId.value;
             m_configName = configName.value;
             m_assetPath = pathField.value;
+            m_difficulty = difficulty.value;
             Save();
         })
         {
@@ -206,7 +211,8 @@ public class GridConfigTool : EditorWindow
             id = m_configId,
             name = m_configName,
             rowsCount = m_rowCount,
-            columnsCount = m_columnCount
+            columnsCount = m_columnCount,
+            difficulty = m_difficulty
         };
 
         // Initialize each row with a bool array of size 4.
