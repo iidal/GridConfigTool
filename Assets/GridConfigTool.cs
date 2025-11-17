@@ -120,26 +120,36 @@ public class GridConfigTool : EditorWindow
         CreateGrid();
 
         // ==== GENERATING CONFIG===========================================================================================
-        var retrieveButton = new Button(() =>
+        var retrieveButtonJson = new Button(() =>
         {
-            Debug.Log("Retrieve button clicked. Processing all button data...");
-            foreach (var data in m_buttonData)
-            {
-                Debug.Log($"Processing data: {data.value} at ({data.x}, {data.y})");
-            }
+            Debug.Log("Retrieve button json clicked. Processing all button data...");
             m_configId = configId.value;
             m_configName = configName.value;
             m_assetPath = pathField.value;
             m_difficulty = difficulty.value;
-            Save();
+            Save("json");
         })
         {
-            text = "Retrieve Data"
+            text = "Retrieve as JSON"
         };
-        m_mainView.Add(retrieveButton);
+        m_mainView.Add(retrieveButtonJson);
+
+        var retrieveButtonSO = new Button(() =>
+        {
+            Debug.Log("Retrieve button SO clicked. Processing all button data...");
+            m_configId = configId.value;
+            m_configName = configName.value;
+            m_assetPath = pathField.value;
+            m_difficulty = difficulty.value;
+            Save("so");
+        })
+        {
+            text = "Retrieve as SO"
+        };
+        m_mainView.Add(retrieveButtonSO);
+
 
     }
-
 
     private void CreateGrid()
     {
@@ -164,7 +174,6 @@ public class GridConfigTool : EditorWindow
                 });
             }
         }
-
 
         for (int row = 0; row < m_columnCount; row++)
         {
@@ -211,8 +220,13 @@ public class GridConfigTool : EditorWindow
         m_rightView.Add(m_buttonContainer);
     }
 
-    private void Save()
+    private void Save(string saveType = "so")
     {
+        if (m_configId == "")
+        {
+            Debug.LogError("Config ID is empty. Please provide a valid ID.");
+            return;
+        }
         ConfigData configData = new ConfigData
         {
             rows = new ConfigData.Row[m_rowCount],
@@ -223,7 +237,6 @@ public class GridConfigTool : EditorWindow
             difficulty = m_difficulty
         };
 
-        // Initialize each row with a bool array of size 4.
         for (int i = 0; i < configData.rows.Length; i++)
         {
             configData.rows[i] = new ConfigData.Row
@@ -236,15 +249,57 @@ public class GridConfigTool : EditorWindow
             //bool clicked = m_buttonData[index].value == "clicked" ? true : false;
             configData.rows[m_buttonData[index].y].notBoolRow[m_buttonData[index].x] = m_buttonData[index].value;
         }
-        string json = JsonUtility.ToJson(configData, true);
+
         string folderPath = $"Assets/Resources/{m_assetPath}";
         if (!Directory.Exists(folderPath))
         {
             Directory.CreateDirectory(folderPath);
         }
-        File.WriteAllText($"{folderPath}/{m_configName}.json", json);
+
+        if (saveType == "so")
+        {
+            SaveSO(configData, folderPath);
+        }
+        else if (saveType == "json")
+        {
+            SaveJson(configData, folderPath);
+        }
+        else
+        {
+            Debug.LogError("Unknown save type");
+        }
+    }
+
+    private void SaveJson(ConfigData configData, string path = "Assets/Resources")
+    {
+        string json = JsonUtility.ToJson(configData, true);
+
+        File.WriteAllText($"{path}/{m_configId}.json", json);
         AssetDatabase.Refresh();
     }
 
+    private void SaveSO(ConfigData puzzleData, string path = "Assets/Resources")
+    {
+        GridSO puzzleScriptable = ScriptableObject.CreateInstance<GridSO>();
+
+        puzzleScriptable.puzzleName = puzzleData.name;
+        puzzleScriptable.puzzleId = puzzleData.id;
+        puzzleScriptable.difficulty = puzzleData.difficulty;
+        puzzleScriptable.rowCount = puzzleData.rowsCount;
+        puzzleScriptable.columnCount = puzzleData.columnsCount;
+
+        puzzleScriptable.rows = new GridSO.Row[puzzleData.rows.Length];
+        for (int i = 0; i < puzzleData.rows.Length; i++)
+        {
+            puzzleScriptable.rows[i] = new GridSO.Row
+            {
+                row = puzzleData.rows[i].notBoolRow
+            };
+        }
+
+        string folderPath = $"{path}/{puzzleData.id}.asset";
+        UnityEditor.AssetDatabase.CreateAsset(puzzleScriptable, folderPath);
+        UnityEditor.AssetDatabase.SaveAssets();
+    }
 
 }
