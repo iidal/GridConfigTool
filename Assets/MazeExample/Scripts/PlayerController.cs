@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
    private Rigidbody rb;
+   [SerializeField] MazeManager m_manager;
 
    // Movement along X and Y axes.
    private float movementX;
@@ -34,4 +35,13 @@ public class PlayerController : MonoBehaviour
       Vector3 movement = new Vector3(movementX, 0.0f, movementY);
       rb.AddForce(movement * speed);
    }
+
+   void OnTriggerEnter(Collider other)
+   {
+      if (other.tag == "goal")
+      {
+         m_manager.LevelCompleted();
+      }
+   }
+
 }

@@ -222,6 +222,7 @@ public class GridConfigTool : EditorWindow
 
     private void Save(string saveType = "so")
     {
+        // TODO check for duplicate config IDs, so old ones are not overwritten
         if (m_configId == "")
         {
             Debug.LogError("Config ID is empty. Please provide a valid ID.");
