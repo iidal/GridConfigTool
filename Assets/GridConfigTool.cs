@@ -6,13 +6,10 @@ using System.Linq;
 using System.IO;
 public class ConfigData
 {
-    // add also enum/something array so not restricted to two values
-
     [System.Serializable]
     public class Row
     {
-        public bool[] row;
-        public uint[] notBoolRow; //???
+        public uint[] row;
     }
     public Row[] rows;
     public string id;
@@ -25,14 +22,16 @@ public class gridButtonData
 {
     public int x; // row index
     public int y;  // column index
-    public uint value; // not going to be string forever
+    public uint value;
 };
 public class GridConfigTool : EditorWindow
 {
+    // UI components
     private VisualElement m_rightView;
     private VisualElement m_mainView;
     private VisualElement m_buttonContainer;
 
+    // Config parameters
     uint m_valueCount = 3; // range of values can be assigned to a button, for exampel 3 = 0,1,2
     uint m_columnCount = 3;
     uint m_rowCount = 4;
@@ -46,18 +45,12 @@ public class GridConfigTool : EditorWindow
     [MenuItem("Window/GridConfigTool")]
     public static void ShowMyEditor()
     {
-
-        // This method is called when the user selects the menu item in the Editor.
         EditorWindow wnd = GetWindow<GridConfigTool>();
         wnd.titleContent = new GUIContent("GridConfigTool");
 
         // Limit size of the window.
         wnd.minSize = new Vector2(300, 300);
         wnd.maxSize = new Vector2(1920, 720);
-    }
-
-    void OnEnable()
-    {
     }
 
     public void CreateGUI()
@@ -104,7 +97,6 @@ public class GridConfigTool : EditorWindow
 
         var updateGridButton = new Button(() =>
         {
-            Debug.Log("Update Grid button clicked.");
             m_rowCount = rowsCount.value;
             m_columnCount = columnsCount.value;
             CreateGrid();
@@ -113,12 +105,6 @@ public class GridConfigTool : EditorWindow
             text = "Update Grid"
         };
         m_mainView.Add(updateGridButton);
-
-        // ==== GRID ========================================================================================================
-
-        m_buttonContainer = new VisualElement();
-        CreateGrid();
-
         // ==== GENERATING CONFIG===========================================================================================
         var retrieveButtonJson = new Button(() =>
         {
@@ -148,7 +134,10 @@ public class GridConfigTool : EditorWindow
         };
         m_mainView.Add(retrieveButtonSO);
 
+        // ==== GRID ========================================================================================================
 
+        m_buttonContainer = new VisualElement();
+        CreateGrid();
     }
 
     private void CreateGrid()
@@ -190,11 +179,6 @@ public class GridConfigTool : EditorWindow
                 var button = new Button();
                 button.text = m_buttonData[buttonIndex].value.ToString();
 
-                // Set button size and spacing.
-                // button.style.width = 100;
-                // button.style.height = 50;
-                // button.style.marginRight = 5;
-
                 button.clicked += () =>
                 {
                     // Access and modify the corresponding gridButtonData.
@@ -207,9 +191,9 @@ public class GridConfigTool : EditorWindow
                 };
 
                 // Set button size and spacing.
-                button.style.width = 100;
+                button.style.width = 50;
                 button.style.height = 50;
-                button.style.marginRight = 5;
+                button.style.marginRight = 1;
 
                 rowContainer.Add(button);
             }
@@ -220,6 +204,7 @@ public class GridConfigTool : EditorWindow
         m_rightView.Add(m_buttonContainer);
     }
 
+    // ==== CONFIG CREATION AND SAVING =================================================================================================
     private void Save(string saveType = "so")
     {
         // TODO check for duplicate config IDs, so old ones are not overwritten
@@ -242,13 +227,12 @@ public class GridConfigTool : EditorWindow
         {
             configData.rows[i] = new ConfigData.Row
             {
-                notBoolRow = new uint[m_columnCount]
+                row = new uint[m_columnCount]
             };
         }
         for (int index = 0; index < m_buttonData.Count; index++)
         {
-            //bool clicked = m_buttonData[index].value == "clicked" ? true : false;
-            configData.rows[m_buttonData[index].y].notBoolRow[m_buttonData[index].x] = m_buttonData[index].value;
+            configData.rows[m_buttonData[index].y].row[m_buttonData[index].x] = m_buttonData[index].value;
         }
 
         string folderPath = $"Assets/Resources/{m_assetPath}";
@@ -294,7 +278,7 @@ public class GridConfigTool : EditorWindow
         {
             puzzleScriptable.rows[i] = new GridSO.Row
             {
-                row = puzzleData.rows[i].notBoolRow
+                row = puzzleData.rows[i].row
             };
         }
 

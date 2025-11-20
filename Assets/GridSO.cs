@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "GridSO", menuName = "ScriptableObjects", order = 1)]
+[CreateAssetMenu(fileName = "GridSO", menuName = "GridSO", order = 1)]
 public class GridSO : ScriptableObject
 {
     public string puzzleName;
