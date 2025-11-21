@@ -4,6 +4,18 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using System.Linq;
 using System.IO;
+
+[System.Serializable]
+public class ConfigurableField
+{
+    public string fieldName;
+    public string fieldType; // "int", "float", "string", "bool"
+    public string fieldValue; // string for json compatibility, for now need to be parsed by user side
+    public void SetValue(object value)
+    {
+        fieldValue = value?.ToString();
+    }
+}
 public class ConfigData
 {
     [System.Serializable]
@@ -17,6 +29,7 @@ public class ConfigData
     public uint rowsCount;
     public uint columnsCount;
     public uint difficulty;
+    public ConfigurableField[] customFields;
 }
 public class gridButtonData
 {
@@ -24,15 +37,17 @@ public class gridButtonData
     public int y;  // column index
     public uint value;
 };
+
 public class GridConfigTool : EditorWindow
 {
     // UI components
     private VisualElement m_rightView;
     private VisualElement m_mainView;
     private VisualElement m_buttonContainer;
+    private VisualElement m_customFieldsContainer;
 
     // Config parameters
-    uint m_valueCount = 3; // range of values can be assigned to a button, for exampel 3 = 0,1,2
+    uint m_valueCount = 3; // range of values can be assigned to a button, for example 3 = 0,1,2
     uint m_columnCount = 3;
     uint m_rowCount = 4;
     uint m_difficulty = 1;
@@ -41,7 +56,10 @@ public class GridConfigTool : EditorWindow
     string m_assetPath = "";
 
     List<gridButtonData> m_buttonData = new List<gridButtonData>();
+    private List<ConfigurableField> m_customFields = new List<ConfigurableField>();
+    private string m_customFieldType = "string";
 
+    //=======================================================================================================================================
     [MenuItem("Window/GridConfigTool")]
     public static void ShowMyEditor()
     {
@@ -105,6 +123,22 @@ public class GridConfigTool : EditorWindow
             text = "Update Grid"
         };
         m_mainView.Add(updateGridButton);
+        // ==== CUSTOM FIELDS ==============================================================================================
+        var customFieldsLabel = new Label("Add custom fields:");
+        m_mainView.Add(customFieldsLabel);
+        var typeDropdown = new PopupField<string>("Type", new List<string> { "string", "int", "float", "bool" }, 0);
+        m_mainView.Add(typeDropdown);
+        var AddFieldButton = new Button(() =>
+        {
+            m_customFieldType = typeDropdown.value;
+            Debug.Log("Add Field button clicked." + m_customFieldType);
+            AddField();
+        })
+        {
+            text = "Add Field"
+        };
+        m_mainView.Add(AddFieldButton);
+        m_mainView.Add(m_customFieldsContainer = new VisualElement());
         // ==== GENERATING CONFIG===========================================================================================
         var retrieveButtonJson = new Button(() =>
         {
@@ -203,6 +237,94 @@ public class GridConfigTool : EditorWindow
 
         m_rightView.Add(m_buttonContainer);
     }
+    // ==== CREATING NEW INPUT FIELDS ========================================================================================================
+    private void AddField()
+    {
+        var newField = new ConfigurableField
+        {
+            fieldName = "NewField",
+            fieldType = m_customFieldType,
+            fieldValue = ""
+        };
+
+        // Create the UI for the field
+        var fieldContainer = new VisualElement();
+        fieldContainer.style.flexDirection = FlexDirection.Column;
+        fieldContainer.style.marginBottom = 5;
+
+        // Field name input
+        var nameField = new TextField("Name")
+        {
+            value = newField.fieldName
+        };
+        nameField.RegisterValueChangedCallback(evt =>
+        {
+            newField.fieldName = evt.newValue;
+        });
+        fieldContainer.Add(nameField);
+
+        // Field value input
+        var valueInput = CreateInputField(newField);
+        fieldContainer.Add(valueInput);
+
+        var removeButton = new Button(() =>
+        {
+            Debug.Log("Remofe field");
+            m_customFields.Remove(newField);
+            m_customFieldsContainer.Remove(fieldContainer);
+        })
+        {
+            text = "Remove this field"
+        };
+
+        fieldContainer.Add(removeButton);
+        m_customFields.Add(newField);
+        m_customFieldsContainer.Add(fieldContainer);
+    }
+    private VisualElement CreateInputField(ConfigurableField field)
+    {
+        VisualElement inputField = null;
+
+        switch (field.fieldType)
+        {
+            case "string":
+                var stringField = new TextField("Value (string)");
+                stringField.RegisterValueChangedCallback(evt =>
+                {
+                    field.SetValue(evt.newValue);
+                });
+                inputField = stringField;
+                break;
+            case "int":
+                var intField = new IntegerField("Value");
+                intField.RegisterValueChangedCallback(evt =>
+                {
+                    field.SetValue(evt.newValue);
+                });
+                inputField = intField;
+                break;
+            case "float":
+                var floatField = new FloatField("Value (float)");
+                floatField.RegisterValueChangedCallback(evt =>
+                {
+                    field.SetValue(evt.newValue);
+                });
+                inputField = floatField;
+                break;
+            case "bool":
+                var boolField = new Toggle("Value (bool)");
+                boolField.RegisterValueChangedCallback(evt =>
+                {
+                    field.SetValue(evt.newValue);
+                });
+                inputField = boolField;
+                break;
+            default:
+                Debug.LogError("Unsupported field type");
+                break;
+        }
+        return inputField;
+    }
 
     // ==== CONFIG CREATION AND SAVING =================================================================================================
     private void Save(string saveType = "so")
@@ -220,7 +342,8 @@ public class GridConfigTool : EditorWindow
             name = m_configName,
             rowsCount = m_rowCount,
             columnsCount = m_columnCount,
-            difficulty = m_difficulty
+            difficulty = m_difficulty,
+            customFields = m_customFields.ToArray()
         };
 
         for (int i = 0; i < configData.rows.Length; i++)
@@ -235,6 +358,7 @@ public class GridConfigTool : EditorWindow
             configData.rows[m_buttonData[index].y].row[m_buttonData[index].x] = m_buttonData[index].value;
         }
 
+        // Create save folder if it does not exist
         string folderPath = $"Assets/Resources/{m_assetPath}";
         if (!Directory.Exists(folderPath))
         {
@@ -272,6 +396,7 @@ public class GridConfigTool : EditorWindow
         puzzleScriptable.difficulty = puzzleData.difficulty;
         puzzleScriptable.rowCount = puzzleData.rowsCount;
         puzzleScriptable.columnCount = puzzleData.columnsCount;
+        puzzleScriptable.customFields = new GridSO.ConfigurableField[puzzleData.customFields.Length];
 
         puzzleScriptable.rows = new GridSO.Row[puzzleData.rows.Length];
         for (int i = 0; i < puzzleData.rows.Length; i++)
@@ -280,6 +405,17 @@ public class GridConfigTool : EditorWindow
             {
                 row = puzzleData.rows[i].row
             };
+        }
+        for(int i=0; i<puzzleData.customFields.Length; i++)
+        {
+            GridSO.ConfigurableField field = new GridSO.ConfigurableField
+            {
+                fieldName = puzzleData.customFields[i].fieldName,
+                fieldType = puzzleData.customFields[i].fieldType,
+                fieldValue = puzzleData.customFields[i].fieldValue
+            };
+            Debug.Log($"Field: {field.fieldName}, Type: {field.fieldType}, Value: {field.fieldValue}");
+            puzzleScriptable.customFields[i] = field;
         }
 
         string folderPath = $"{path}/{puzzleData.id}.asset";

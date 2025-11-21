@@ -16,4 +16,13 @@ public class GridSO : ScriptableObject
     public uint rowCount;
     public uint columnCount;
 
+    
+    [System.Serializable]
+    public class ConfigurableField
+    {
+        public string fieldName;
+        public string fieldType;
+        public string fieldValue;
+    }
+    public ConfigurableField[] customFields;
 }
