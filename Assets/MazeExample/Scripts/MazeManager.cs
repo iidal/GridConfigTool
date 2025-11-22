@@ -19,11 +19,22 @@ public class MazeManager : MonoBehaviour
 
     void InitMenu()
     {
-        foreach(GridSO config in m_levelConfigs)
+        foreach (GridSO config in m_levelConfigs)
         {
+
             GameObject buttonObj = Instantiate(m_levelButtonPrefab, m_levelButtonParent);
             LevelButton levelButton = buttonObj.GetComponent<LevelButton>();
             levelButton.InitConfig(config, this);
+
+            //example for using and parsing a custom field
+            GridSO.ConfigurableField customField = new GridSO.ConfigurableField();
+            if (GridConfigHelper.GetCustomField(ref customField, config, "LevelDisabled"))
+            {
+                if (GridConfigHelper.ParseBool(customField.fieldValue) == true)
+                {
+                    levelButton.SetDisabled();
+                }
+            }
         }
     }
     public void StartLevel(GridSO levelConfig)

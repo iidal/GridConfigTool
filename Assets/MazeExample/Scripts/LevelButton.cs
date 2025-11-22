@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 public class LevelButton : MonoBehaviour
 {
@@ -19,5 +20,8 @@ public class LevelButton : MonoBehaviour
         Debug.Log($"Clicked level: {m_levelConfig.puzzleName}");
         m_manager.StartLevel(m_levelConfig);
     }
-
+    public void SetDisabled()
+    {
+        GetComponent<Button>().interactable = false;
+    }
 }

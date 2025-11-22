@@ -17,11 +17,6 @@ public class MazeCreator : MonoBehaviour
     [SerializeField] private GameObject m_goalArea;
     [SerializeField] private GameObject m_player;
 
-    void Start()
-    {
-
-    }
-
     public void CreateMaze(GridSO mazeConfig)
     {
         float xSize = mazeConfig.columnCount;
