@@ -2,8 +2,14 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEditor.UIElements;   // for PropertyField
 using System.Linq;
 using System.IO;
+
+public class TempHolder : ScriptableObject
+{
+    public List<GameObject> objects = new();
+}
 
 [System.Serializable]
 public class ConfigurableField
@@ -21,7 +27,8 @@ public class ConfigData
     [System.Serializable]
     public class Row
     {
-        public uint[] row;
+        // public uint[] row;
+        public GameObject[] rowObjects;
     }
     public Row[] rows;
     public string id;
@@ -35,7 +42,9 @@ public class gridButtonData
 {
     public int x; // row index
     public int y;  // column index
-    public uint value;
+    //public uint value;
+    public GameObject prefab;
+    public int prefabIndex; // -1 for null
 };
 
 public class GridConfigTool : EditorWindow
@@ -46,8 +55,11 @@ public class GridConfigTool : EditorWindow
     private VisualElement m_buttonContainer;
     private VisualElement m_customFieldsContainer;
 
+    SerializedObject listObj; //
+    SerializedProperty listProp; //
+
     // Config parameters
-    uint m_valueCount = 3; // range of values can be assigned to a button, for example 3 = 0,1,2
+    //uint m_valueCount = 3; // range of values can be assigned to a button, for example 3 = 0,1,2
     uint m_columnCount = 3;
     uint m_rowCount = 4;
     uint m_difficulty = 1;
@@ -93,17 +105,26 @@ public class GridConfigTool : EditorWindow
         var difficulty = new UnsignedIntegerField("Difficulty:");
         m_mainView.Add(difficulty);
         // ==================================================================================================================
-        var valuesCount = new UnsignedIntegerField("Values per button:");
-        valuesCount.value = (uint)m_valueCount;
-        m_mainView.Add(valuesCount);
-        var updateValueCount = new Button(() =>
-        {
-            m_valueCount = valuesCount.value;
-        })
-        {
-            text = "Update value count"
-        };
-        m_mainView.Add(updateValueCount);
+        // var valuesCount = new UnsignedIntegerField("Values per button:");
+        // valuesCount.value = (uint)m_valueCount;
+        // m_mainView.Add(valuesCount);
+        // var updateValueCount = new Button(() =>
+        // {
+        //     m_valueCount = valuesCount.value;
+        // })
+        // {
+        //     text = "Update value count"
+        // };
+        // m_mainView.Add(updateValueCount);
+        // ==== PREFAB LIST ==============================================================================================
+        var target = ScriptableObject.CreateInstance<TempHolder>();
+        listObj = new SerializedObject(target);
+        listProp = listObj.FindProperty("objects");
+
+        PropertyField prefabList = new PropertyField(listProp, "Prefabs");
+        prefabList.Bind(listObj);
+
+        m_mainView.Add(prefabList);
         // ==== GRID SIZE ===================================================================================================
         var rowsCount = new UnsignedIntegerField("Rows:");
         rowsCount.value = (uint)m_rowCount;
@@ -140,19 +161,19 @@ public class GridConfigTool : EditorWindow
         m_mainView.Add(AddFieldButton);
         m_mainView.Add(m_customFieldsContainer = new VisualElement());
         // ==== GENERATING CONFIG===========================================================================================
-        var retrieveButtonJson = new Button(() =>
-        {
-            Debug.Log("Retrieve button json clicked. Processing all button data...");
-            m_configId = configId.value;
-            m_configName = configName.value;
-            m_assetPath = pathField.value;
-            m_difficulty = difficulty.value;
-            Save("json");
-        })
-        {
-            text = "Retrieve as JSON"
-        };
-        m_mainView.Add(retrieveButtonJson);
+        // var retrieveButtonJson = new Button(() =>
+        // {
+        //     Debug.Log("Retrieve button json clicked. Processing all button data...");
+        //     m_configId = configId.value;
+        //     m_configName = configName.value;
+        //     m_assetPath = pathField.value;
+        //     m_difficulty = difficulty.value;
+        //     Save("json");
+        // })
+        // {
+        //     text = "Retrieve as JSON"
+        // };
+        // m_mainView.Add(retrieveButtonJson);
 
         var retrieveButtonSO = new Button(() =>
         {
@@ -193,7 +214,9 @@ public class GridConfigTool : EditorWindow
                 {
                     x = col,
                     y = row,
-                    value = 0
+                    //value = 0,
+                    prefab = null,
+                    prefabIndex = -1
                 });
             }
         }
@@ -211,17 +234,32 @@ public class GridConfigTool : EditorWindow
                 if (buttonIndex >= m_buttonData.Count) break; // Stop if no more buttons are left.
 
                 var button = new Button();
-                button.text = m_buttonData[buttonIndex].value.ToString();
+                button.text = "";
 
                 button.clicked += () =>
                 {
+                    if (listProp.arraySize == 0)
+                    {
+                        Debug.LogWarning("Prefab list is empty. Add prefabs to the list first.");
+                        return;
+                    }
                     // Access and modify the corresponding gridButtonData.
                     var buttonData = m_buttonData[buttonIndex];
-                    uint nextValue = buttonData.value == (m_valueCount - 1) ? 0 : buttonData.value + 1;
-                    buttonData.value = nextValue;
+
+                    GameObject prefab = null;
+                    int nextIndex = (buttonData.prefabIndex == (uint)(listProp.arraySize - 1)) ? -1 : buttonData.prefabIndex + 1;
+                    if (nextIndex != -1)
+                    {
+                        buttonData.prefabIndex = nextIndex;
+                        prefab = listProp.GetArrayElementAtIndex((int)nextIndex).objectReferenceValue as GameObject; // what is objectReferenceValue?
+
+                    }
+                    buttonData.prefabIndex = nextIndex;
+                    buttonData.prefab = prefab;
+
                     m_buttonData[buttonIndex] = buttonData; // Update the list.
-                    button.text = buttonData.value.ToString(); // Update the button text.
-                    Debug.Log($"Button at ({buttonData.x}, {buttonData.y}) clicked. New value: {buttonData.value}");
+                    // show image etc?
+                    button.text = prefab == null ? "" : buttonData.prefab.name;
                 };
 
                 // Set button size and spacing.
@@ -350,12 +388,12 @@ public class GridConfigTool : EditorWindow
         {
             configData.rows[i] = new ConfigData.Row
             {
-                row = new uint[m_columnCount]
+                rowObjects = new GameObject[m_columnCount]
             };
         }
         for (int index = 0; index < m_buttonData.Count; index++)
         {
-            configData.rows[m_buttonData[index].y].row[m_buttonData[index].x] = m_buttonData[index].value;
+            configData.rows[m_buttonData[index].y].rowObjects[m_buttonData[index].x] = m_buttonData[index].prefab;
         }
 
         // Create save folder if it does not exist
@@ -398,15 +436,25 @@ public class GridConfigTool : EditorWindow
         puzzleScriptable.columnCount = puzzleData.columnsCount;
         puzzleScriptable.customFields = new GridSO.ConfigurableField[puzzleData.customFields.Length];
 
+        // puzzleScriptable.rows = new GridSO.Row[puzzleData.rows.Length];
+        // for (int i = 0; i < puzzleData.rows.Length; i++)
+        // {
+        //     puzzleScriptable.rows[i] = new GridSO.Row
+        //     {
+        //         row = puzzleData.rows[i].row
+        //     };
+        // }
         puzzleScriptable.rows = new GridSO.Row[puzzleData.rows.Length];
         for (int i = 0; i < puzzleData.rows.Length; i++)
         {
             puzzleScriptable.rows[i] = new GridSO.Row
             {
-                row = puzzleData.rows[i].row
+                rowObjects = puzzleData.rows[i].rowObjects
             };
         }
-        for(int i=0; i<puzzleData.customFields.Length; i++)
+
+
+        for (int i = 0; i < puzzleData.customFields.Length; i++)
         {
             GridSO.ConfigurableField field = new GridSO.ConfigurableField
             {
@@ -418,6 +466,16 @@ public class GridConfigTool : EditorWindow
             puzzleScriptable.customFields[i] = field;
         }
 
+        // This is just testing
+        listObj.Update();
+        SerializedProperty list = listObj.FindProperty("objects");
+
+        for (int i = 0; i < list.arraySize; i++)
+        {
+            GameObject go = list.GetArrayElementAtIndex(i).objectReferenceValue as GameObject;
+            Debug.Log("Element " + i + ": " + go);
+        }
+        //////
         string folderPath = $"{path}/{puzzleData.id}.asset";
         UnityEditor.AssetDatabase.CreateAsset(puzzleScriptable, folderPath);
         UnityEditor.AssetDatabase.SaveAssets();

@@ -10,7 +10,8 @@ public class GridSO : ScriptableObject
     [System.Serializable]
     public class Row
     {
-        public uint[] row;
+        public uint[] row; // remove
+        public GameObject[] rowObjects;
     }
     public Row[] rows;
     public uint rowCount;
