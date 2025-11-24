@@ -31,7 +31,7 @@ public class MazeCreator : MonoBehaviour
                 if (Convert.ToBoolean(row.row[i]))
                 {
                     float xPos = m_wallSpawnPoint.transform.position.x - (xSize / 2) + i + 0.5f; // 0.5 shift to align to center
-                    float zPos = m_wallSpawnPoint.transform.position.z - (zSize / 2) + rowIndex + 0.5f;
+                    float zPos = m_wallSpawnPoint.transform.position.z + (zSize / 2) - rowIndex - 0.5f;
                     Vector3 pos = new Vector3(xPos, 0.0f, zPos);
                     Instantiate(m_wallPrefab, pos, Quaternion.identity, m_walls.transform);
                 }
