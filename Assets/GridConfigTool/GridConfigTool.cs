@@ -6,7 +6,7 @@ using UnityEditor.UIElements;   // for PropertyField
 using System.Linq;
 using System.IO;
 
-public class TempHolder : ScriptableObject
+public class PrefabHolder : ScriptableObject
 {
     public List<GameObject> objects = new();
 }
@@ -15,8 +15,8 @@ public class TempHolder : ScriptableObject
 public class ConfigurableField
 {
     public string fieldName;
-    public string fieldType; // "int", "float", "string", "bool"
-    public string fieldValue; // string for json compatibility, for now need to be parsed by user side
+    public string fieldType;     // "int", "float", "string", "bool"
+    public string fieldValue;    // string for json compatibility, for now need to be parsed by user side
     public void SetValue(object value)
     {
         fieldValue = value?.ToString();
@@ -27,7 +27,7 @@ public class ConfigData
     [System.Serializable]
     public class Row
     {
-        // public uint[] row;
+        public uint[] row;
         public GameObject[] rowObjects;
     }
     public Row[] rows;
@@ -42,7 +42,7 @@ public class gridButtonData
 {
     public int x; // row index
     public int y;  // column index
-    //public uint value;
+    public uint value;
     public GameObject prefab;
     public int prefabIndex; // -1 for null
 };
@@ -55,8 +55,8 @@ public class GridConfigTool : EditorWindow
     private VisualElement m_buttonContainer;
     private VisualElement m_customFieldsContainer;
 
-    SerializedObject listObj; //
-    SerializedProperty listProp; //
+    SerializedObject listObj;
+    SerializedProperty listProp;
 
     // Config parameters
     //uint m_valueCount = 3; // range of values can be assigned to a button, for example 3 = 0,1,2
@@ -117,7 +117,7 @@ public class GridConfigTool : EditorWindow
         // };
         // m_mainView.Add(updateValueCount);
         // ==== PREFAB LIST ==============================================================================================
-        var target = ScriptableObject.CreateInstance<TempHolder>();
+        var target = ScriptableObject.CreateInstance<PrefabHolder>();
         listObj = new SerializedObject(target);
         listProp = listObj.FindProperty("objects");
 
@@ -251,7 +251,7 @@ public class GridConfigTool : EditorWindow
                     if (nextIndex != -1)
                     {
                         buttonData.prefabIndex = nextIndex;
-                        prefab = listProp.GetArrayElementAtIndex((int)nextIndex).objectReferenceValue as GameObject; // what is objectReferenceValue?
+                        prefab = listProp.GetArrayElementAtIndex((int)nextIndex).objectReferenceValue as GameObject;
 
                     }
                     buttonData.prefabIndex = nextIndex;
@@ -420,7 +420,6 @@ public class GridConfigTool : EditorWindow
     private void SaveJson(ConfigData configData, string path = "Assets/Resources")
     {
         string json = JsonUtility.ToJson(configData, true);
-
         File.WriteAllText($"{path}/{m_configId}.json", json);
         AssetDatabase.Refresh();
     }
@@ -466,16 +465,6 @@ public class GridConfigTool : EditorWindow
             puzzleScriptable.customFields[i] = field;
         }
 
-        // This is just testing
-        listObj.Update();
-        SerializedProperty list = listObj.FindProperty("objects");
-
-        for (int i = 0; i < list.arraySize; i++)
-        {
-            GameObject go = list.GetArrayElementAtIndex(i).objectReferenceValue as GameObject;
-            Debug.Log("Element " + i + ": " + go);
-        }
-        //////
         string folderPath = $"{path}/{puzzleData.id}.asset";
         UnityEditor.AssetDatabase.CreateAsset(puzzleScriptable, folderPath);
         UnityEditor.AssetDatabase.SaveAssets();

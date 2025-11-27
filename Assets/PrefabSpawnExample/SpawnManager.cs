@@ -20,12 +20,8 @@ public class SpawnManager : MonoBehaviour
         int rowIndex = 0;
         foreach (GridSO.Row row in m_config.rows)
         {
-        Debug.Log("1");
-
             for (int i = 0; i < row.rowObjects.Length; i++)
             {
-        Debug.Log("2");
-
                 if (row.rowObjects[i] != null)
                 {
                     float xPos = m_spawnCenter.transform.position.x - (xSize / 2) + i - 0.5f; // 0.5 shift to align to center
